@@ -1,0 +1,16 @@
+{
+  "name": "Cris Boatos e Dias",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "description": "Barra de boatos e contagem de dias, com avisos e sons para todos os jogadores da mesa.",
+  "author": "Cris",
+  "icon": "https://emixiszao.github.io/cris-boatos/icon.svg",
+  "background_url": "https://emixiszao.github.io/cris-boatos/background.html",
+  "action": {
+    "title": "Boatos e Dias",
+    "icon": "https://emixiszao.github.io/cris-boatos/icon.svg",
+    "popover": "https://emixiszao.github.io/cris-boatos/index.html",
+    "width": 300,
+    "height": 130
+  }
+}

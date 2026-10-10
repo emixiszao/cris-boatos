@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Boatos e Dias - segundo plano</title>
+</head>
+<body>
+<script type="module">
+// Roda escondido em TODAS as contas. Quando o mestre muda o estado da sala,
+// cada conta detecta a mudança e mostra o aviso na própria tela (com som).
+import OBR from "https://esm.sh/@owlbear-rodeo/sdk@3";
+
+const KEY = "com.cris.boatos/estado";
+const POPUP_ID = "com.cris.boatos/popup";
+const DIA_ID = "com.cris.boatos/dia";
+
+// Posição do aviso de boatos (canto superior direito). Ajuste à vontade.
+const POPUP_LARGURA = 420;
+const POPUP_ALTURA = 96;
+const MARGEM_LADO = 16;
+const MARGEM_TOPO = 64;
+
+const lerEstado = m => {
+  const e = m[KEY] ?? {};
+  const n = v => Number.isFinite(v) ? Math.trunc(v) : 0;
+  return { boatos: Math.min(5, Math.max(0, n(e.boatos))), dia: Math.max(0, n(e.dia)) };
+};
+
+async function mostrarBoato(tipo) {
+  try {
+    const W = await OBR.viewport.getWidth();
+    await OBR.popover.close(POPUP_ID).catch(() => {});
+    await OBR.popover.open({
+      id: POPUP_ID,
+      url: new URL("popup.html?tipo=" + tipo, location.href).href,
+      width: Math.min(POPUP_LARGURA, W - 2 * MARGEM_LADO),
+      height: POPUP_ALTURA,
+      anchorReference: "POSITION",
+      anchorPosition: { left: W - MARGEM_LADO, top: MARGEM_TOPO },
+      transformOrigin: { horizontal: "RIGHT", vertical: "TOP" },
+      marginThreshold: 0,
+      hidePaper: true,
+      disableClickAway: true
+    });
+  } catch (e) { /* ignora */ }
+}
+
+async function mostrarDia(dia, boatos) {
+  try {
+    await OBR.modal.close(DIA_ID).catch(() => {});
+    await OBR.modal.open({
+      id: DIA_ID,
+      url: new URL(`dia.html?dia=${dia}&boatos=${boatos}`, location.href).href,
+      fullScreen: true,
+      hidePaper: true,
+      hideBackdrop: true,
+      disablePointerEvents: true
+    });
+  } catch (e) { /* ignora */ }
+}
+
+OBR.onReady(async () => {
+  let anterior = lerEstado(await OBR.room.getMetadata());   // estado inicial: não dispara aviso
+  OBR.room.onMetadataChange(m => {
+    const novo = lerEstado(m);
+    if (novo.boatos > anterior.boatos) mostrarBoato("sobe");
+    else if (novo.boatos < anterior.boatos) mostrarBoato("desce");
+    if (novo.dia > anterior.dia) mostrarDia(novo.dia, novo.boatos);
+    anterior = novo;
+  });
+});
+</script>
+</body>
+</html>

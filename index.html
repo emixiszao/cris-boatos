@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boatos e Dias</title>
+<style>
+  :root { --bg:#14121a; --panel:#1d1a26; --line:#322c42; --text:#ece8f2; --muted:#9a93ad; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:12px; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:13px; }
+  button { font:inherit; border:0; border-radius:7px; padding:8px 6px; color:var(--text); font-weight:600; cursor:pointer; background:#2e2840; }
+  button:hover { filter:brightness(1.25); }
+  button:focus-visible { outline:2px solid #7a5cd6; outline-offset:1px; }
+  .bloco { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .bloco + .bloco { margin-top:10px; }
+  .rotulo { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .botoes { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
+  .menos { background:#1f3a2a; }
+  .mais  { background:#43222a; }
+  .dia { font-family:Georgia,serif; font-size:22px; font-weight:700; color:#d98a35; }
+  .barra { height:14px; border-radius:7px; background:#2a2a2a; position:relative; overflow:hidden; }
+  .barra i { position:absolute; inset:0; background:linear-gradient(90deg,#2ecc71 0%,#f1c40f 38%,#f39c12 66%,#e74c3c 100%);
+             clip-path:inset(0 100% 0 0); transition:clip-path .6s ease; }
+</style>
+</head>
+<body>
+  <div class="bloco">
+    <div class="rotulo">Boatos</div>
+    <div class="barra" role="img" aria-label="Nível de boatos"><i id="fill"></i></div>
+    <div class="botoes" id="botoes-boato" hidden>
+      <button class="menos" id="b-menos">− Boato</button>
+      <button class="mais" id="b-mais">+ Boato</button>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="rotulo">Dias</div>
+    <div class="dia" id="dia"></div>
+    <div class="botoes" id="botoes-dia" hidden>
+      <button class="menos" id="d-menos">− Dia</button>
+      <button class="mais" id="d-mais">+ Dia</button>
+    </div>
+  </div>
+
+<script type="module">
+import OBR from "https://esm.sh/@owlbear-rodeo/sdk@3";
+
+const KEY = "com.cris.boatos/estado";
+const MAX_BOATOS = 5;
+let isGM = false;
+let estado = { boatos: 0, dia: 0 };
+
+const lerEstado = m => {
+  const e = m[KEY] ?? {};
+  const n = v => Number.isFinite(v) ? Math.trunc(v) : 0;
+  return { boatos: Math.min(MAX_BOATOS, Math.max(0, n(e.boatos))), dia: Math.max(0, n(e.dia)) };
+};
+
+function render() {
+  document.getElementById("fill").style.clipPath = `inset(0 ${100 - (estado.boatos / MAX_BOATOS) * 100}% 0 0)`;
+  document.getElementById("dia").textContent = estado.dia > 0 ? `${estado.dia}º Dia` : "Nenhum dia ainda";
+  document.getElementById("botoes-boato").hidden = !isGM;
+  document.getElementById("botoes-dia").hidden = !isGM;
+  OBR.action.setHeight(isGM ? 270 : 150);
+}
+
+async function mudar(campo, delta, min, max) {
+  if (!isGM) return;
+  try {
+    const atual = lerEstado(await OBR.room.getMetadata());
+    atual[campo] = Math.min(max, Math.max(min, atual[campo] + delta));
+    await OBR.room.setMetadata({ [KEY]: atual });
+  } catch (e) {
+    OBR.notification.show("Não foi possível salvar: " + (e?.message ?? e), "ERROR");
+  }
+}
+
+document.getElementById("b-mais").addEventListener("click", () => mudar("boatos", +1, 0, MAX_BOATOS));
+document.getElementById("b-menos").addEventListener("click", () => mudar("boatos", -1, 0, MAX_BOATOS));
+document.getElementById("d-mais").addEventListener("click", () => mudar("dia", +1, 0, 9999));
+document.getElementById("d-menos").addEventListener("click", () => mudar("dia", -1, 0, 9999));
+
+OBR.onReady(async () => {
+  isGM = (await OBR.player.getRole()) === "GM";
+  estado = lerEstado(await OBR.room.getMetadata());
+  render();
+  OBR.player.onChange(p => { const gm = p.role === "GM"; if (gm !== isGM) { isGM = gm; render(); } });
+  OBR.room.onMetadataChange(m => { estado = lerEstado(m); render(); });
+});
+</script>
+</body>
+</html>
