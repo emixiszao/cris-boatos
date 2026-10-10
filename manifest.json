@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "manifest_version": 1,
   "description": "Barra de boatos e contagem de dias, com avisos e sons para todos os jogadores da mesa.",
-  "author": "Cris",
+  "author": "@mestremxrpg no Youtube",
   "icon": "https://emixiszao.github.io/cris-boatos/icon.svg",
   "background_url": "https://emixiszao.github.io/cris-boatos/background.html",
   "action": {
